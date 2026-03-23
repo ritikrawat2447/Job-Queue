@@ -1,0 +1,37 @@
+spring:
+  application:
+    name: job-queue-system
+
+  # Database
+  datasource:
+    url: jdbc:postgresql://localhost:5432/jqs_db
+    username: jqs_user
+    password: jqs_pass
+    driver-class-name: org.postgresql.Driver
+
+  # JPA
+  jpa:
+    hibernate:
+      ddl-auto: validate        # Flyway owns schema, not Hibernate
+    show-sql: true              # logs every SQL query, helpful during dev
+    properties:
+      hibernate:
+        format_sql: true        # makes logged SQL readable
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  # Flyway
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+# Server
+server:
+  port: 8080
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
