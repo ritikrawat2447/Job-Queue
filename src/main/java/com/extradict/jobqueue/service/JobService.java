@@ -74,4 +74,37 @@ public class JobService {
                 .finishedAt(job.getFinishedAt())
                 .build();
     }
+
+    // ── Worker methods ────────────────────────────────────────
+
+    public Job markAsRunning(UUID jobId) {
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new RuntimeException("Job not found: " + jobId));
+        job.setStatus(JobStatus.RUNNING);
+        job.setStartedAt(java.time.LocalDateTime.now());
+        job.setAttempts(job.getAttempts() + 1);
+        return jobRepository.save(job);
+    }
+
+    public Job markAsSuccess(UUID jobId) {
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new RuntimeException("Job not found: " + jobId));
+        job.setStatus(JobStatus.SUCCESS);
+        job.setFinishedAt(java.time.LocalDateTime.now());
+        return jobRepository.save(job);
+    }
+
+    public Job markAsFailed(UUID jobId, String errorMessage) {
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new RuntimeException("Job not found: " + jobId));
+        job.setStatus(JobStatus.FAILED);
+        job.setError(errorMessage);
+        job.setFinishedAt(java.time.LocalDateTime.now());
+        return jobRepository.save(job);
+    }
+
+    public Job getJobEntity(UUID jobId) {
+        return jobRepository.findById(jobId)
+                .orElseThrow(() -> new RuntimeException("Job not found: " + jobId));
+    }
 }

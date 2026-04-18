@@ -28,4 +28,13 @@ public class RedisQueueService {
         Long size = redisTemplate.opsForList().size(JOB_QUEUE);
         return size != null ? size : 0;
     }
+
+    // Worker side — pop job ID from RIGHT of list (BRPOP)
+    // Blocks for 5 seconds waiting for a job
+    public String popFromQueue() {
+        return redisTemplate.opsForList().rightPop(
+                JOB_QUEUE,
+                java.time.Duration.ofSeconds(5)
+        );
+    }
 }
