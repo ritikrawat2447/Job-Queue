@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -29,30 +30,42 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
-        // 1. Read Authorization header
+        System.out.println("🔥 FILTER HIT: " + request.getServletPath());
+
+        String path = request.getServletPath();
+        if (path.startsWith("/auth") || path.startsWith("/actuator")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         final String authHeader = request.getHeader("Authorization");
 
-        // 2. If no token → skip this filter, let security config handle it
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // 3. Extract token (remove "Bearer " prefix)
         final String jwt = authHeader.substring(7);
-        final String username = jwtService.extractUsername(jwt);
+        String username = null;
 
-        // 4. If username found and not already authenticated
+        try {
+            username = jwtService.extractUsername(jwt);
+            System.out.println("🔥 Extracted username: " + username);
+        } catch (Exception e) {
+            System.out.println("🔥 Token extraction failed: " + e.getMessage());
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         if (username != null &&
                 SecurityContextHolder.getContext().getAuthentication() == null) {
 
             UserDetails userDetails =
                     userDetailsService.loadUserByUsername(username);
 
-            // 5. Validate token
             if (jwtService.isTokenValid(jwt, userDetails)) {
+                System.out.println("🔥 Token VALID - setting auth");
 
-                // 6. Set user as authenticated in Spring Security context
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(
                                 userDetails,
@@ -63,12 +76,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                         new WebAuthenticationDetailsSource()
                                 .buildDetails(request)
                 );
-                SecurityContextHolder.getContext()
-                        .setAuthentication(authToken);
+
+                SecurityContext context = SecurityContextHolder.createEmptyContext();
+                context.setAuthentication(authToken);
+                SecurityContextHolder.setContext(context);
+
+                System.out.println("🔥 Auth set: " + SecurityContextHolder.getContext().getAuthentication());
             }
         }
 
-        // 7. Continue to next filter / controller
         filterChain.doFilter(request, response);
     }
 }

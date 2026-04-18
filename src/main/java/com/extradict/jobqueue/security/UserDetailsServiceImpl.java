@@ -30,7 +30,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
         return User.builder()
                 .username(username)
-                .password("{noop}" + password) // {noop} = no encoding for L3
+                .password(password) // {noop} = no encoding for L3
                 .roles("PRODUCER")
                 .build();
     }
