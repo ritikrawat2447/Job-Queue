@@ -14,8 +14,4 @@ public class JobQueueApplication {
         );
         SpringApplication.run(JobQueueApplication.class, args);
     }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> d319ee6 (Fixed JWY Authentication error)
