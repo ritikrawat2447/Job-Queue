@@ -4,8 +4,6 @@ import com.extradict.jobqueue.entity.Job;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Slf4j
@@ -14,18 +12,19 @@ public class JobProcessor {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    /**
-     * Executes the actual job logic based on jobType.
-     * For L3 we simulate work with a sleep.
-     * In L4 this becomes real logic per job type.
-     */
     public void process(Job job) throws Exception {
         log.info("Processing job {} of type {}", job.getId(), job.getJobType());
 
-        switch (job.getJobType()) {
-            case "send_email" -> processEmailJob(job);
-            case "resize_image" -> processImageJob(job);
-            default -> processGenericJob(job);
+        String jobType = job.getJobType();
+
+        if ("send_email".equals(jobType)) {
+            processEmailJob(job);
+        } else if ("resize_image".equals(jobType)) {
+            processImageJob(job);
+        } else if ("failing_job".equals(jobType)) {
+            processFailingJob(job);
+        } else {
+            processGenericJob(job);
         }
 
         log.info("Job {} processed successfully", job.getId());
@@ -33,7 +32,6 @@ public class JobProcessor {
 
     private void processEmailJob(Job job) throws Exception {
         log.info("Sending email for job {}", job.getId());
-        // Simulate work
         Thread.sleep(1000);
         log.info("Email sent for job {}", job.getId());
     }
@@ -48,5 +46,11 @@ public class JobProcessor {
         log.info("Processing generic job {}", job.getId());
         Thread.sleep(500);
         log.info("Generic job done {}", job.getId());
+    }
+
+    // Always fails — used to test retry + DLQ
+    private void processFailingJob(Job job) throws Exception {
+        log.info("⚠️ Simulating failure for job {}", job.getId());
+        throw new Exception("Simulated job failure for testing retry logic");
     }
 }

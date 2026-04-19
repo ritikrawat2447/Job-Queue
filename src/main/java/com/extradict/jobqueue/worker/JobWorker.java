@@ -24,11 +24,6 @@ public class JobWorker {
 
     private final AtomicBoolean running = new AtomicBoolean(true);
 
-    /**
-     * Starts AFTER the entire Spring context is fully loaded.
-     * @EventListener(ContextRefreshedEvent) fires after Tomcat is up.
-     * @Async runs it in a separate thread so HTTP still works.
-     */
     @Async("workerExecutor")
     @EventListener(ContextRefreshedEvent.class)
     public void start() {
@@ -45,31 +40,51 @@ public class JobWorker {
 
     private void pollAndProcess() {
         String jobId = redisQueueService.popFromQueue();
-
-        if (jobId == null) {
-            return;
-        }
+        if (jobId == null) return;
 
         log.info("📥 Picked up job: {}", jobId);
-        processJob(UUID.fromString(jobId));
+        processWithRetry(UUID.fromString(jobId));
     }
 
-    private void processJob(UUID jobId) {
-        Job job = null;
-        try {
-            job = jobService.markAsRunning(jobId);
-            log.info("🔄 Job {} status → RUNNING", jobId);
+    private void processWithRetry(UUID jobId) {
+        Job job = jobService.getJobEntity(jobId);
+        int maxAttempts = job.getMaxAttempts();
 
-            jobProcessor.process(job);
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                // Mark as RUNNING and increment attempts
+                job = jobService.markAsRunning(jobId);
+                log.info("🔄 Job {} → RUNNING (attempt {}/{})", jobId, attempt, maxAttempts);
 
-            jobService.markAsSuccess(jobId);
-            log.info("✅ Job {} status → SUCCESS", jobId);
+                // Execute the job
+                jobProcessor.process(job);
 
-        } catch (Exception e) {
-            log.error("❌ Job {} failed: {}", jobId, e.getMessage());
-            if (job != null) {
-                jobService.markAsFailed(jobId, e.getMessage());
-                log.info("💀 Job {} status → FAILED", jobId);
+                // Success — update status and stop retrying
+                jobService.markAsSuccess(jobId);
+                log.info("✅ Job {} → SUCCESS on attempt {}", jobId, attempt);
+                return;
+
+            } catch (Exception e) {
+                log.error("❌ Job {} failed on attempt {}/{}: {}",
+                        jobId, attempt, maxAttempts, e.getMessage());
+
+                if (attempt < maxAttempts) {
+                    // Exponential backoff — 2s, 4s, 8s
+                    long waitMs = (long) Math.pow(2, attempt) * 1000;
+                    log.info("⏳ Retrying job {} in {}ms...", jobId, waitMs);
+
+                    try {
+                        Thread.sleep(waitMs);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
+                } else {
+                    // All retries exhausted → Dead Letter Queue
+                    log.error("💀 Job {} exhausted all {} attempts → DLQ", jobId, maxAttempts);
+                    jobService.markAsFailed(jobId, e.getMessage());
+                    redisQueueService.pushToDeadLetterQueue(jobId);
+                }
             }
         }
     }

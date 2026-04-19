@@ -37,4 +37,16 @@ public class RedisQueueService {
                 java.time.Duration.ofSeconds(5)
         );
     }
+
+    // Push to Dead Letter Queue — permanently failed jobs
+    public void pushToDeadLetterQueue(UUID jobId) {
+        redisTemplate.opsForList().leftPush(DEAD_LETTER_Q, jobId.toString());
+        log.info("💀 Job {} pushed to dead letter queue", jobId);
+    }
+
+    // Check DLQ depth
+    public long getDeadLetterQueueDepth() {
+        Long size = redisTemplate.opsForList().size(DEAD_LETTER_Q);
+        return size != null ? size : 0;
+    }
 }
