@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: "Job Queue Dashboards"
+    orgId: 1
+    folder: "Job Queue"
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards
