@@ -44,7 +44,7 @@ public class RedisQueueService {
 
     public void pushToDeadLetterQueue(UUID jobId) {
         redisTemplate.opsForList().leftPush(DEAD_LETTER_Q, jobId.toString());
-        log.info("💀 Job {} pushed to dead letter queue", jobId);
+        log.info("Job {} pushed to dead letter queue", jobId);
     }
 
     public long getQueueDepth() {

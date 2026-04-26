@@ -27,7 +27,7 @@ public class JobWorker {
     @Async("workerExecutor")
     @EventListener(ContextRefreshedEvent.class)
     public void start() {
-        log.info("🚀 Worker started — polling Redis queue...");
+        log.info("Worker started — polling Redis queue...");
 
         while (running.get()) {
             try {
@@ -42,7 +42,7 @@ public class JobWorker {
         String jobId = redisQueueService.popFromQueue();
         if (jobId == null) return;
 
-        log.info("📥 Picked up job: {}", jobId);
+        log.info("Picked up job: {}", jobId);
         processWithRetry(UUID.fromString(jobId));
     }
 
@@ -54,24 +54,24 @@ public class JobWorker {
             try {
                 // Mark as RUNNING and increment attempts
                 job = jobService.markAsRunning(jobId);
-                log.info("🔄 Job {} → RUNNING (attempt {}/{})", jobId, attempt, maxAttempts);
+                log.info("Job {} → RUNNING (attempt {}/{})", jobId, attempt, maxAttempts);
 
                 // Execute the job
                 jobProcessor.process(job);
 
                 // Success — update status and stop retrying
                 jobService.markAsSuccess(jobId);
-                log.info("✅ Job {} → SUCCESS on attempt {}", jobId, attempt);
+                log.info("Job {} → SUCCESS on attempt {}", jobId, attempt);
                 return;
 
             } catch (Exception e) {
-                log.error("❌ Job {} failed on attempt {}/{}: {}",
+                log.error("Job {} failed on attempt {}/{}: {}",
                         jobId, attempt, maxAttempts, e.getMessage());
 
                 if (attempt < maxAttempts) {
                     // Exponential backoff — 2s, 4s, 8s
                     long waitMs = (long) Math.pow(2, attempt) * 1000;
-                    log.info("⏳ Retrying job {} in {}ms...", jobId, waitMs);
+                    log.info("Retrying job {} in {}ms...", jobId, waitMs);
 
                     try {
                         Thread.sleep(waitMs);
@@ -81,7 +81,7 @@ public class JobWorker {
                     }
                 } else {
                     // All retries exhausted → Dead Letter Queue
-                    log.error("💀 Job {} exhausted all {} attempts → DLQ", jobId, maxAttempts);
+                    log.error("Job {} exhausted all {} attempts → DLQ", jobId, maxAttempts);
                     jobService.markAsFailed(jobId, e.getMessage());
                     redisQueueService.pushToDeadLetterQueue(jobId);
                 }

@@ -50,7 +50,7 @@ public class JobProcessor {
 
     // Always fails — used to test retry + DLQ
     private void processFailingJob(Job job) throws Exception {
-        log.info("⚠️ Simulating failure for job {}", job.getId());
+        log.info("Simulating failure for job {}", job.getId());
         throw new Exception("Simulated job failure for testing retry logic");
     }
 }

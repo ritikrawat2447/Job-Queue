@@ -22,20 +22,20 @@ public class AuthController {
     @PostMapping("/token")
     public ResponseEntity<?> login(@RequestBody AuthRequest request) {
         try {
-            System.out.println("🔥 Controller HIT");
+            System.out.println("Controller HIT");
             System.out.println(request.getUsername() + " " + request.getPassword());
 
             AuthResponse response = authService.login(request);
-            System.out.println("🔥 Token generated: " + response.getToken());
+            System.out.println("Token generated: " + response.getToken());
             return ResponseEntity.ok(response);
 
         } catch (BadCredentialsException e) {
-            System.out.println("🔥 Bad credentials: " + e.getMessage());
+            System.out.println("Bad credentials: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body("Invalid username or password");
 
         } catch (Exception e) {
-            System.out.println("🔥 Unexpected error: " + e.getMessage());
+            System.out.println("Unexpected error: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Auth failed: " + e.getMessage());

@@ -30,7 +30,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
-        System.out.println("🔥 FILTER HIT: " + request.getServletPath());
+        System.out.println("FILTER HIT: " + request.getServletPath());
 
         String path = request.getServletPath();
         if (path.startsWith("/auth") || path.startsWith("/actuator")) {
@@ -50,9 +50,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         try {
             username = jwtService.extractUsername(jwt);
-            System.out.println("🔥 Extracted username: " + username);
+            System.out.println("Extracted username: " + username);
         } catch (Exception e) {
-            System.out.println("🔥 Token extraction failed: " + e.getMessage());
+            System.out.println("Token extraction failed: " + e.getMessage());
             filterChain.doFilter(request, response);
             return;
         }
@@ -64,7 +64,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     userDetailsService.loadUserByUsername(username);
 
             if (jwtService.isTokenValid(jwt, userDetails)) {
-                System.out.println("🔥 Token VALID - setting auth");
+                System.out.println("Token VALID - setting auth");
 
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(
@@ -81,7 +81,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 context.setAuthentication(authToken);
                 SecurityContextHolder.setContext(context);
 
-                System.out.println("🔥 Auth set: " + SecurityContextHolder.getContext().getAuthentication());
+                System.out.println("Auth set: " + SecurityContextHolder.getContext().getAuthentication());
             }
         }
 
